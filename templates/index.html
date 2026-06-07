@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Credibility Detector</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #1e293b;
+            max-width: 650px;
+            width: 100%;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
+        h2 {
+            font-size: 2.2rem;
+            margin-bottom: 15px;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+        .subtitle {
+            color: #94a3b8;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        .features-list {
+            margin: 25px 0 35px 0;
+            text-align: left;
+            background-color: #0f172a;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+        }
+        .feature-item {
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+        }
+        .feature-item::before {
+            content: "⚡";
+            margin-right: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .divider {
+            text-align: center;
+            margin: 18px 0;
+            color: #64748b;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 14px 16px;
+            background-color: #0f172a;
+            border: 2px solid #334155;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        input[type="file"] {
+            padding: 10px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            cursor: pointer;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+        }
+        .btn {
+            background: linear-gradient(135deg, #38bdf8 0%, #4f46e5 100%);
+            color: white;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .results-card {
+            background-color: #0f172a;
+            padding: 24px;
+            margin-top: 30px;
+            border-radius: 12px;
+            border-left: 4px solid #38bdf8;
+        }
+        .error-card {
+            background-color: #451a03;
+            padding: 20px;
+            margin-top: 30px;
+            border-radius: 12px;
+            border-left: 4px solid #f97316;
+            color: #fed7aa;
+        }
+        .results-card h3, .error-card h3 {
+            margin-bottom: 15px;
+            font-size: 1.25rem;
+        }
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #1e293b;
+        }
+        .data-item:last-of-type {
+            border-bottom: none;
+        }
+        .data-label { color: #94a3b8; }
+        .data-value { font-weight: 600; }
+        
+        .verdict-box {
+            margin-top: 15px;
+            padding: 12px;
+            background-color: #1e293b;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            line-height: 1.4;
+        }
+        .gauge-container {
+            margin-top: 25px;
+            background-color: #1e293b;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .gauge-label {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .gauge-track {
+            height: 14px;
+            width: 100%;
+            background: linear-gradient(to right, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+            border-radius: 10px;
+            position: relative;
+        }
+        .gauge-marker {
+            width: 6px;
+            height: 22px;
+            background-color: #ffffff;
+            border: 1px solid #000;
+            position: absolute;
+            top: -4px;
+            border-radius: 2px;
+            transform: translateX(-50%);
+            transition: left 0.5s ease-out;
+        }
+        .legend-container {
+            margin-top: 20px;
+            border-top: 1px solid #334155;
+            padding-top: 15px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        {% if not show_analyzer %}
+        <h2>TruthLens AI</h2>
+        <p class="subtitle">Welcome to the future of media literacy. Scan article links OR upload raw screenshots/memes to evaluate data credibility instantly.</p>
+        
+        <div class="features-list">
+            <div class="feature-item"><strong>Linguistic Scraper:</strong> Checks live URLs for subjectivity metrics.</div>
+            <div class="feature-item"><strong>Multimodal Scan:</strong> Submits images to Gemini to read and unpack context rules.</div>
+            <div class="feature-item"><strong>Unified Dashboard:</strong> Tracks credibility positions along a visual trust track.</div>
+        </div>
+
+        <a href="/?start=true" class="btn">Start Analyzing Service</a>
+        {% endif %}
+
+        {% if show_analyzer %}
+        <h2>AI Credibility Dashboard</h2>
+        <p class="subtitle">Scan web articles instantly or drop an image snippet file below.</p>
+        
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <input type="text" name="url" placeholder="Paste article URL link here...">
+            </div>
+            
+            <div class="divider">OR</div>
+            
+            <div class="form-group">
+                <input type="file" name="image_file" accept="image/*">
+            </div>
+            
+            <button type="submit" class="btn">Run Verification Scan</button>
+        </form>
+
+        {% if error %}
+        <div class="error-card">
+            <h3>Analysis Failed</h3>
+            <p>{{ error }}</p>
+        </div>
+        {% endif %}
+
+        {% if score is not none %}
+        <div class="results-card">
+            <h3>Analysis Metrics</h3>
+            <div class="data-item">
+                <span class="data-label">Credibility Score</span>
+                <span class="data-value" style="color: #34d399;">{{ score }}%</span>
+            </div>
+            <div class="data-item">
+                <span class="data-label">Subjectivity Level</span>
+                <span class="data-value">{{ subjectivity }}%</span>
+            </div>
+            <div class="data-item">
+                <span class="data-label">Clickbait Flags Found</span>
+                <span class="data-value" style="color: #f87171;">{{ flags }}</span>
+            </div>
+            <div class="verdict-box">
+                <strong>Analysis Verdict:</strong> {{ verdict }}
+            </div>
+
+            <div class="gauge-container">
+                <span class="gauge-label">Visual Trust Indicator (Red to Green):</span>
+                <div class="gauge-track">
+                    <div class="gauge-marker" data-score="{{ score | default(0) }}"></div>
+                </div>
+            </div>
+
+            <div class="legend-container">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background-color: #10b981;"></div>
+                    <span><strong>71% - 100% (Best - Green):</strong> Highly trustworthy, factual reporting.</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background-color: #f59e0b;"></div>
+                    <span><strong>41% - 70% (Average - Orange):</strong> Mixed content or heavy opinions.</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background-color: #ef4444;"></div>
+                    <span><strong>0% - 40% (Worst - Red):</strong> High risk sensationalist clickbait.</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+    </div>
+
+</body>
+</html>
