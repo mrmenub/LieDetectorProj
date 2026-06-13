@@ -1,5 +1,10 @@
 import os
+from dotenv import load_dotenv
 from flask import Flask, render_template, request
+
+# Load environment variables from a local .env file (e.g. GEMINI_API_KEY).
+# override=True so the .env value wins over any stale/invalid var already in the shell.
+load_dotenv(override=True)
 import requests
 from bs4 import BeautifulSoup
 from textblob import TextBlob
@@ -14,27 +19,46 @@ print(f"\n[BOOT CHECK] System is actively running model: {GEMINI_MODEL}\n")
 
 # Pull key from system environment variables securely
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    print("[WARN] GEMINI_API_KEY is not set. Add it to a .env file or your environment "
+          "(see .env.example). Gemini verdicts and image scans will fail until you do.\n")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 def extract_article_text(url):
+    """Fetch a page and return (text, error). On success error is None;
+    on failure text is None and error explains why (so the UI can be specific)."""
+    # Be forgiving if the user pastes "example.com" without a scheme.
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+
+    # A fuller, browser-like header set so fewer sites reject us outright.
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.google.com/',
+        'Upgrade-Insecure-Requests': '1',
+    }
     try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        }
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code != 200:
-            return None
-            
-        soup = BeautifulSoup(response.text, 'html.parser')
-        for script in soup(["script", "style"]):
-            script.decompose()
-            
-        text = soup.get_text()
-        lines = (line.strip() for line in text.splitlines())
-        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-        return '\n'.join(chunk for chunk in chunks if chunk)
-    except:
-        return None
+        response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
+    except requests.exceptions.Timeout:
+        return None, "The site took too long to respond (timed out). Try a different page."
+    except requests.exceptions.RequestException as e:
+        return None, f"Couldn't reach that URL ({type(e).__name__}). Check the link and try again."
+
+    if response.status_code != 200:
+        return None, (f"The site returned HTTP {response.status_code} "
+                      f"({'blocking scrapers' if response.status_code in (401, 403, 429) else 'not reachable'}). "
+                      "Many news sites block automated tools — try a different article.")
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+    for script in soup(["script", "style"]):
+        script.decompose()
+
+    text = soup.get_text()
+    lines = (line.strip() for line in text.splitlines())
+    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+    return '\n'.join(chunk for chunk in chunks if chunk), None
 
 def analyze_truthfulness(text):
     blob = TextBlob(text)
@@ -127,15 +151,14 @@ def home():
         else:
             user_url = request.form.get('url', '').strip()
             if user_url:
-                article_text = extract_article_text(user_url)
-                if article_text:
-                    if len(article_text) >= 100:
-                        score, subjectivity, flags = analyze_truthfulness(article_text)
-                        verdict = get_gemini_verdict(article_text, score)
-                    else:
-                        error_msg = "The website didn't have enough readable text. Try a different page."
+                article_text, scrape_error = extract_article_text(user_url)
+                if scrape_error:
+                    error_msg = scrape_error
+                elif len(article_text) >= 100:
+                    score, subjectivity, flags = analyze_truthfulness(article_text)
+                    verdict = get_gemini_verdict(article_text, score)
                 else:
-                    error_msg = "Access Denied or Connection Failed. This website is blocking our scraper."
+                    error_msg = "The website didn't have enough readable text. Try a different page."
             else:
                 error_msg = "Please provide a valid article link or upload an image file."
 

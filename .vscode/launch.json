@@ -1,0 +1,27 @@
+{
+  // Press F5 to run/debug. "Flask: app.py" uses Flask's debugger + reloader.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flask: app.py",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "flask",
+      "env": {
+        "FLASK_APP": "app.py",
+        "FLASK_DEBUG": "1"
+      },
+      "args": ["run", "--no-debugger", "--no-reload", "--port", "5001"],
+      "jinja": true,
+      "autoStartBrowser": false,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Python: detector.py (CLI)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/detector.py",
+      "console": "integratedTerminal"
+    }
+  ]
+}
